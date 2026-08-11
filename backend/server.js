@@ -27,6 +27,120 @@ app.post("/api/quotes", (req, res) => {
     annual_discount,
     notes
   } = req.body;
+  // Validate required fields
+if (
+  !customer_name ||
+  !cover_type ||
+  applicant1_age === undefined ||
+  !applicant1_cover_history ||
+  !hospital_cover ||
+  !extras_cover ||
+  !payment_frequency
+) {
+  return res.status(400).json({
+    error: "Required fields are missing"
+  });
+}
+
+// Validate cover type
+if (!["Single", "Couple", "Family"].includes(cover_type)) {
+  return res.status(400).json({
+    error: "Invalid cover type"
+  });
+}
+
+// Validate Applicant 1 age
+if (applicant1_age < 18 || applicant1_age > 100) {
+  return res.status(400).json({
+    error: "Applicant 1 age must be between 18 and 100"
+  });
+}
+
+// Validate Applicant 1 history
+if (
+  !["Yes", "No", "Not sure"].includes(
+    applicant1_cover_history
+  )
+) {
+  return res.status(400).json({
+    error: "Invalid Applicant 1 cover history"
+  });
+}
+
+// Couple and Family require Applicant 2
+if (
+  (cover_type === "Couple" || cover_type === "Family") &&
+  (applicant2_age === undefined ||
+    !applicant2_cover_history)
+) {
+  return res.status(400).json({
+    error:
+      "Applicant 2 age and cover history are required for Couple or Family cover"
+  });
+}
+
+// Validate Applicant 2 age
+if (
+  (cover_type === "Couple" || cover_type === "Family") &&
+  (applicant2_age < 18 || applicant2_age > 100)
+) {
+  return res.status(400).json({
+    error: "Applicant 2 age must be between 18 and 100"
+  });
+}
+
+// Validate Applicant 2 history
+if (
+  (cover_type === "Couple" || cover_type === "Family") &&
+  !["Yes", "No", "Not sure"].includes(
+    applicant2_cover_history
+  )
+) {
+  return res.status(400).json({
+    error: "Invalid Applicant 2 cover history"
+  });
+}
+
+// Validate hospital cover
+if (
+  !["None", "Basic", "Bronze", "Silver", "Gold"].includes(
+    hospital_cover
+  )
+) {
+  return res.status(400).json({
+    error: "Invalid hospital cover"
+  });
+}
+
+// Validate extras cover
+if (
+  !["None", "Basic", "Standard", "Premium"].includes(
+    extras_cover
+  )
+) {
+  return res.status(400).json({
+    error: "Invalid extras cover"
+  });
+}
+
+// Validate payment frequency
+if (
+  !["Monthly", "Yearly"].includes(payment_frequency)
+) {
+  return res.status(400).json({
+    error: "Invalid payment frequency"
+  });
+}
+
+// Validate annual discount
+if (
+  annual_discount < 0 ||
+  annual_discount > 10
+) {
+  return res.status(400).json({
+    error: "Annual discount must be between 0 and 10 percent"
+  });
+}
 
   const sql = `
     INSERT INTO quotes (
@@ -52,8 +166,10 @@ app.post("/api/quotes", (req, res) => {
       cover_type,
       applicant1_age,
       applicant1_cover_history,
-      applicant2_age || null,
-      applicant2_cover_history || null,
+      cover_type === "Single" ? null : applicant2_age,
+      cover_type === "Single"
+        ? null
+        : applicant2_cover_history,
       hospital_cover,
       extras_cover,
       payment_frequency,
