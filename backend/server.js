@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const db = require("./db");
-
+const { calculateQuote } = require("./calculator");
 const app = express();
 const PORT = 5000;
 
@@ -73,6 +73,51 @@ app.post("/api/quotes", (req, res) => {
       });
     }
   );
+});
+
+app.post("/api/calculate", (req, res) => {
+  const data = req.body;
+
+  if (!data.customer_name) {
+    return res.status(400).json({
+      error: "Customer name is required"
+    });
+  }
+
+  if (
+    data.applicant1_age < 18 ||
+    data.applicant1_age > 100
+  ) {
+    return res.status(400).json({
+      error: "Applicant 1 age must be between 18 and 100"
+    });
+  }
+
+  if (
+    (data.cover_type === "Couple" ||
+      data.cover_type === "Family") &&
+    (!data.applicant2_age ||
+      !data.applicant2_cover_history)
+  ) {
+    return res.status(400).json({
+      error:
+        "Applicant 2 age and cover history are required for Couple or Family cover"
+    });
+  }
+
+  if (
+    data.annual_discount < 0 ||
+    data.annual_discount > 10
+  ) {
+    return res.status(400).json({
+      error:
+        "Annual discount must be between 0 and 10 percent"
+    });
+  }
+
+  const result = calculateQuote(data);
+
+  res.json(result);
 });
 
 app.listen(PORT, () => {
