@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const db = require("./db");
 const { calculateQuote } = require("./calculator");
+const { validateQuote } = require("./validation");
 const app = express();
 const PORT = 5000;
 
@@ -27,120 +28,14 @@ app.post("/api/quotes", (req, res) => {
     annual_discount,
     notes
   } = req.body;
-  // Validate required fields
-if (
-  !customer_name ||
-  !cover_type ||
-  applicant1_age === undefined ||
-  !applicant1_cover_history ||
-  !hospital_cover ||
-  !extras_cover ||
-  !payment_frequency
-) {
-  return res.status(400).json({
-    error: "Required fields are missing"
-  });
-}
 
-// Validate cover type
-if (!["Single", "Couple", "Family"].includes(cover_type)) {
-  return res.status(400).json({
-    error: "Invalid cover type"
-  });
-}
+  const errors = validateQuote(req.body);
 
-// Validate Applicant 1 age
-if (applicant1_age < 18 || applicant1_age > 100) {
-  return res.status(400).json({
-    error: "Applicant 1 age must be between 18 and 100"
-  });
-}
-
-// Validate Applicant 1 history
-if (
-  !["Yes", "No", "Not sure"].includes(
-    applicant1_cover_history
-  )
-) {
-  return res.status(400).json({
-    error: "Invalid Applicant 1 cover history"
-  });
-}
-
-// Couple and Family require Applicant 2
-if (
-  (cover_type === "Couple" || cover_type === "Family") &&
-  (applicant2_age === undefined ||
-    !applicant2_cover_history)
-) {
-  return res.status(400).json({
-    error:
-      "Applicant 2 age and cover history are required for Couple or Family cover"
-  });
-}
-
-// Validate Applicant 2 age
-if (
-  (cover_type === "Couple" || cover_type === "Family") &&
-  (applicant2_age < 18 || applicant2_age > 100)
-) {
-  return res.status(400).json({
-    error: "Applicant 2 age must be between 18 and 100"
-  });
-}
-
-// Validate Applicant 2 history
-if (
-  (cover_type === "Couple" || cover_type === "Family") &&
-  !["Yes", "No", "Not sure"].includes(
-    applicant2_cover_history
-  )
-) {
-  return res.status(400).json({
-    error: "Invalid Applicant 2 cover history"
-  });
-}
-
-// Validate hospital cover
-if (
-  !["None", "Basic", "Bronze", "Silver", "Gold"].includes(
-    hospital_cover
-  )
-) {
-  return res.status(400).json({
-    error: "Invalid hospital cover"
-  });
-}
-
-// Validate extras cover
-if (
-  !["None", "Basic", "Standard", "Premium"].includes(
-    extras_cover
-  )
-) {
-  return res.status(400).json({
-    error: "Invalid extras cover"
-  });
-}
-
-// Validate payment frequency
-if (
-  !["Monthly", "Yearly"].includes(payment_frequency)
-) {
-  return res.status(400).json({
-    error: "Invalid payment frequency"
-  });
-}
-
-// Validate annual discount
-if (
-  annual_discount < 0 ||
-  annual_discount > 10
-) {
-  return res.status(400).json({
-    error: "Annual discount must be between 0 and 10 percent"
-  });
-}
+  if (errors.length > 0) {
+    return res.status(400).json({
+      error: errors.join("; ")
+    });
+  }
 
   const sql = `
     INSERT INTO quotes (
@@ -173,7 +68,9 @@ if (
       hospital_cover,
       extras_cover,
       payment_frequency,
-      annual_discount || 0,
+      payment_frequency === "Yearly"
+  ? Number(annual_discount || 0)
+  : 0,
       notes || ""
     ],
     function (err) {
@@ -257,8 +154,14 @@ app.put("/api/quotes/:id", (req, res) => {
     annual_discount,
     notes
   } = req.body;
+  const errors = validateQuote(req.body);
 
-  // Basic validation
+if (errors.length > 0) {
+  return res.status(400).json({
+    error: errors.join("; ")
+  });
+}
+  
   if (
     !customer_name ||
     !cover_type ||
@@ -333,7 +236,9 @@ app.put("/api/quotes/:id", (req, res) => {
       hospital_cover,
       extras_cover,
       payment_frequency,
-      annual_discount || 0,
+     payment_frequency === "Yearly"
+  ? Number(annual_discount || 0)
+  : 0,
       notes || "",
       id
     ],
@@ -386,40 +291,11 @@ app.delete("/api/quotes/:id", (req, res) => {
 app.post("/api/calculate", (req, res) => {
   const data = req.body;
 
-  if (!data.customer_name) {
-    return res.status(400).json({
-      error: "Customer name is required"
-    });
-  }
+  const errors = validateQuote(data);
 
-  if (
-    data.applicant1_age < 18 ||
-    data.applicant1_age > 100
-  ) {
+  if (errors.length > 0) {
     return res.status(400).json({
-      error: "Applicant 1 age must be between 18 and 100"
-    });
-  }
-
-  if (
-    (data.cover_type === "Couple" ||
-      data.cover_type === "Family") &&
-    (!data.applicant2_age ||
-      !data.applicant2_cover_history)
-  ) {
-    return res.status(400).json({
-      error:
-        "Applicant 2 age and cover history are required for Couple or Family cover"
-    });
-  }
-
-  if (
-    data.annual_discount < 0 ||
-    data.annual_discount > 10
-  ) {
-    return res.status(400).json({
-      error:
-        "Annual discount must be between 0 and 10 percent"
+      error: errors.join("; ")
     });
   }
 

@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useParams
+} from "react-router-dom";
 
 function QuoteDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const [quote, setQuote] = useState(null);
   const [calculation, setCalculation] = useState(null);
@@ -32,13 +37,44 @@ function QuoteDetail() {
 
     loadQuote();
   }, [id]);
+  async function handleDelete() {
+  const confirmed = window.confirm(
+    `Are you sure you want to delete the quote for ${quote.customer_name}?`
+  );
 
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/quotes/${id}`,
+      {
+        method: "DELETE"
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      setError(result.error || "Unable to delete quote");
+      return;
+    }
+
+    navigate("/");
+  } catch (error) {
+    console.error(error);
+    setError("Could not connect to the backend.");
+  }
+}
   if (error) {
     return (
       <div className="app">
         <h1>Quote Details</h1>
         <p>{error}</p>
-        <Link to="/">Back to Quotes</Link>
+        <button onClick={() => navigate("/")}>
+          Back to Quotes
+        </button>
       </div>
     );
   }
@@ -65,6 +101,13 @@ function QuoteDetail() {
       <Link to={`/quotes/${quote.id}/edit`}>
   Edit Quote
 </Link>
+      <button
+  type="button"
+  className="delete-button"
+  onClick={handleDelete}
+>
+  Delete Quote
+</button>
 
       <div className="detail-section">
         <h3>Customer and Cover</h3>

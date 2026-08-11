@@ -155,3 +155,12 @@ a {
 a:hover {
   text-decoration: underline;
 }
+.delete-button {
+  display: block;
+  margin-top: 15px;
+  background: #c62828;
+}
+
+.delete-button:hover {
+  background: #991f1f;
+}
