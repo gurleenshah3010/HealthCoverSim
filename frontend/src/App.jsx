@@ -67,6 +67,19 @@ function App() {
       setMessage(
         `Quote created successfully. Quote ID: ${result.id}`
       );
+      setFormData({
+  customer_name: "",
+  cover_type: "Single",
+  applicant1_age: "",
+  applicant1_cover_history: "Yes",
+  applicant2_age: "",
+  applicant2_cover_history: "Yes",
+  hospital_cover: "None",
+  extras_cover: "None",
+  payment_frequency: "Monthly",
+  annual_discount: 0,
+  notes: ""
+});
     } catch (error) {
       setMessage("Could not connect to the backend.");
       console.error(error);
