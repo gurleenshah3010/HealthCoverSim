@@ -109,3 +109,49 @@ hr {
 .quote-card p {
   margin: 7px 0;
 }
+.detail-section {
+  margin-top: 25px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.detail-section h3 {
+  margin-top: 0;
+}
+
+.detail-section p {
+  margin: 8px 0;
+}
+
+.warning-box {
+  margin-top: 25px;
+  padding: 18px;
+  border: 1px solid #d99b00;
+  border-radius: 8px;
+  background: #fff8e1;
+}
+
+.warning-box h3 {
+  margin-top: 0;
+}
+
+.lhc-box {
+  margin-top: 25px;
+  padding: 18px;
+  border-radius: 8px;
+  background: #eef3ff;
+}
+
+a {
+  display: inline-block;
+  margin-top: 10px;
+  color: #2451ad;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}

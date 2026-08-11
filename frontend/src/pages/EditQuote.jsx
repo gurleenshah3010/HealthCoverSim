@@ -1,26 +1,49 @@
 import { useEffect, useState } from "react";
-import { Link, Route, Routes } from "react-router-dom";
-import QuoteDetail from "./pages/QuoteDetail";
-import EditQuote from "./pages/EditQuote";
-import "./App.css";
+import {
+  Link,
+  useNavigate,
+  useParams
+} from "react-router-dom";
 
-function Home() {
-  const [formData, setFormData] = useState({
-    customer_name: "",
-    cover_type: "Single",
-    applicant1_age: "",
-    applicant1_cover_history: "Yes",
-    applicant2_age: "",
-    applicant2_cover_history: "Yes",
-    hospital_cover: "None",
-    extras_cover: "None",
-    payment_frequency: "Monthly",
-    annual_discount: 0,
-    notes: ""
-  });
+function EditQuote() {
+  const { id } = useParams();
+  const navigate = useNavigate();
 
-  const [message, setMessage] = useState("");
-  const [quotes, setQuotes] = useState([]);
+  const [formData, setFormData] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadQuote() {
+      try {
+        const response = await fetch(
+          `http://localhost:5000/api/quotes/${id}`
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          setError(data.error || "Unable to load quote");
+          return;
+        }
+
+        setFormData({
+          ...data.quote,
+          applicant2_age:
+            data.quote.applicant2_age ?? "",
+          applicant2_cover_history:
+            data.quote.applicant2_cover_history ?? "Yes",
+          annual_discount:
+            data.quote.annual_discount ?? 0,
+          notes: data.quote.notes ?? ""
+        });
+      } catch (error) {
+        console.error(error);
+        setError("Could not connect to the backend.");
+      }
+    }
+
+    loadQuote();
+  }, [id]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -30,48 +53,39 @@ function Home() {
       [name]: value
     });
   }
-  async function loadQuotes() {
-  try {
-    const response = await fetch(
-      "http://localhost:5000/api/quotes"
-    );
-
-    const data = await response.json();
-
-    if (response.ok) {
-      setQuotes(data);
-    }
-  } catch (error) {
-    console.error("Could not load quotes:", error);
-  }
-}
-useEffect(() => {
-  loadQuotes();
-}, []);
 
   async function handleSubmit(event) {
     event.preventDefault();
-    setMessage("");
+    setError("");
 
     const dataToSend = {
       ...formData,
-      applicant1_age: Number(formData.applicant1_age),
+
+      applicant1_age: Number(
+        formData.applicant1_age
+      ),
+
       applicant2_age:
         formData.cover_type === "Single"
           ? null
           : Number(formData.applicant2_age),
+
       applicant2_cover_history:
         formData.cover_type === "Single"
           ? null
           : formData.applicant2_cover_history,
-      annual_discount: Number(formData.annual_discount)
+
+      annual_discount:
+        formData.payment_frequency === "Yearly"
+          ? Number(formData.annual_discount)
+          : 0
     };
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/quotes",
+        `http://localhost:5000/api/quotes/${id}`,
         {
-          method: "POST",
+          method: "PUT",
           headers: {
             "Content-Type": "application/json"
           },
@@ -82,32 +96,33 @@ useEffect(() => {
       const result = await response.json();
 
       if (!response.ok) {
-        setMessage(result.error || "Unable to create quote");
+        setError(result.error || "Unable to update quote");
         return;
       }
 
-      setMessage(
-        `Quote created successfully. Quote ID: ${result.id}`
-      );
-      setFormData({
-  customer_name: "",
-  cover_type: "Single",
-  applicant1_age: "",
-  applicant1_cover_history: "Yes",
-  applicant2_age: "",
-  applicant2_cover_history: "Yes",
-  hospital_cover: "None",
-  extras_cover: "None",
-  payment_frequency: "Monthly",
-  annual_discount: 0,
-  notes: ""
-});
-      loadQuotes();
-
+      navigate(`/quotes/${id}`);
     } catch (error) {
-      setMessage("Could not connect to the backend.");
       console.error(error);
+      setError("Could not connect to the backend.");
     }
+  }
+
+  if (error && !formData) {
+    return (
+      <div className="app">
+        <h1>Edit Quote</h1>
+        <p>{error}</p>
+        <Link to="/">Back to Quotes</Link>
+      </div>
+    );
+  }
+
+  if (!formData) {
+    return (
+      <div className="app">
+        <p>Loading quote...</p>
+      </div>
+    );
   }
 
   const showApplicant2 =
@@ -116,8 +131,13 @@ useEffect(() => {
 
   return (
     <div className="app">
-      <h1>HealthCoverSim</h1>
-      <p>Private Health Insurance Quote Simulator</p>
+      <Link to={`/quotes/${id}`}>
+        ← Back to Quote Details
+      </Link>
+
+      <h1>Edit Quote</h1>
+
+      {error && <p>{error}</p>}
 
       <form onSubmit={handleSubmit}>
         <label>
@@ -161,12 +181,16 @@ useEffect(() => {
           Applicant 1 Hospital Cover History
           <select
             name="applicant1_cover_history"
-            value={formData.applicant1_cover_history}
+            value={
+              formData.applicant1_cover_history
+            }
             onChange={handleChange}
           >
             <option value="Yes">Yes</option>
             <option value="No">No</option>
-            <option value="Not sure">Not sure</option>
+            <option value="Not sure">
+              Not sure
+            </option>
           </select>
         </label>
 
@@ -189,12 +213,16 @@ useEffect(() => {
               Applicant 2 Hospital Cover History
               <select
                 name="applicant2_cover_history"
-                value={formData.applicant2_cover_history}
+                value={
+                  formData.applicant2_cover_history
+                }
                 onChange={handleChange}
               >
                 <option value="Yes">Yes</option>
                 <option value="No">No</option>
-                <option value="Not sure">Not sure</option>
+                <option value="Not sure">
+                  Not sure
+                </option>
               </select>
             </label>
           </>
@@ -224,8 +252,12 @@ useEffect(() => {
           >
             <option value="None">None</option>
             <option value="Basic">Basic</option>
-            <option value="Standard">Standard</option>
-            <option value="Premium">Premium</option>
+            <option value="Standard">
+              Standard
+            </option>
+            <option value="Premium">
+              Premium
+            </option>
           </select>
         </label>
 
@@ -236,8 +268,12 @@ useEffect(() => {
             value={formData.payment_frequency}
             onChange={handleChange}
           >
-            <option value="Monthly">Monthly</option>
-            <option value="Yearly">Yearly</option>
+            <option value="Monthly">
+              Monthly
+            </option>
+            <option value="Yearly">
+              Yearly
+            </option>
           </select>
         </label>
 
@@ -264,68 +300,12 @@ useEffect(() => {
           />
         </label>
 
-        <button type="submit">Create Quote</button>
+        <button type="submit">
+          Save Changes
+        </button>
       </form>
-
-      {message && <p>{message}</p>}
-      <hr />
-
-<h2>Saved Quotes</h2>
-
-{quotes.length === 0 ? (
-  <p>No quotes have been created yet.</p>
-) : (
-  <div className="quote-list">
-    {quotes.map((quote) => (
-      <div className="quote-card" key={quote.id}>
-        <h3>{quote.customer_name}</h3>
-
-        <p>
-          <strong>Quote ID:</strong> {quote.id}
-        </p>
-
-        <p>
-          <strong>Cover Type:</strong> {quote.cover_type}
-        </p>
-
-        <p>
-          <strong>Hospital:</strong> {quote.hospital_cover}
-        </p>
-
-        <p>
-          <strong>Extras:</strong> {quote.extras_cover}
-        </p>
-
-        <p>
-          <strong>Payment:</strong> {quote.payment_frequency}
-        </p>
-        <Link to={`/quotes/${quote.id}`}>
-           View Quote Details
-        </Link>
-      </div>
-    ))}
-  </div>
-)}
     </div>
   );
 }
 
-function App() {
-  return (
-    <Routes>
-  <Route path="/" element={<Home />} />
-
-  <Route
-    path="/quotes/:id"
-    element={<QuoteDetail />}
-  />
-
-  <Route
-    path="/quotes/:id/edit"
-    element={<EditQuote />}
-  />
-</Routes>
-  );
-}
-
-export default App;
+export default EditQuote;
