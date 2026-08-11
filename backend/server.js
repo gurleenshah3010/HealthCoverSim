@@ -75,6 +75,55 @@ app.post("/api/quotes", (req, res) => {
   );
 });
 
+// Get all quotes
+app.get("/api/quotes", (req, res) => {
+  const sql = `
+    SELECT *
+    FROM quotes
+    ORDER BY created_at DESC
+  `;
+
+  db.all(sql, [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({
+        error: err.message
+      });
+    }
+
+    res.json(rows);
+  });
+});
+
+// Get one quote by ID
+app.get("/api/quotes/:id", (req, res) => {
+  const id = req.params.id;
+
+  db.get(
+    "SELECT * FROM quotes WHERE id = ?",
+    [id],
+    (err, quote) => {
+      if (err) {
+        return res.status(500).json({
+          error: err.message
+        });
+      }
+
+      if (!quote) {
+        return res.status(404).json({
+          error: "Quote not found"
+        });
+      }
+
+      const calculation = calculateQuote(quote);
+
+      res.json({
+        quote,
+        calculation
+      });
+    }
+  );
+});
+
 app.post("/api/calculate", (req, res) => {
   const data = req.body;
 
