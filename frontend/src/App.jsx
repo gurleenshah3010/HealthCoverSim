@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 
 function App() {
@@ -17,6 +17,7 @@ function App() {
   });
 
   const [message, setMessage] = useState("");
+  const [quotes, setQuotes] = useState([]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -26,6 +27,24 @@ function App() {
       [name]: value
     });
   }
+  async function loadQuotes() {
+  try {
+    const response = await fetch(
+      "http://localhost:5000/api/quotes"
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+      setQuotes(data);
+    }
+  } catch (error) {
+    console.error("Could not load quotes:", error);
+  }
+}
+useEffect(() => {
+  loadQuotes();
+}, []);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -80,6 +99,8 @@ function App() {
   annual_discount: 0,
   notes: ""
 });
+      loadQuotes();
+
     } catch (error) {
       setMessage("Could not connect to the backend.");
       console.error(error);
@@ -244,6 +265,41 @@ function App() {
       </form>
 
       {message && <p>{message}</p>}
+      <hr />
+
+<h2>Saved Quotes</h2>
+
+{quotes.length === 0 ? (
+  <p>No quotes have been created yet.</p>
+) : (
+  <div className="quote-list">
+    {quotes.map((quote) => (
+      <div className="quote-card" key={quote.id}>
+        <h3>{quote.customer_name}</h3>
+
+        <p>
+          <strong>Quote ID:</strong> {quote.id}
+        </p>
+
+        <p>
+          <strong>Cover Type:</strong> {quote.cover_type}
+        </p>
+
+        <p>
+          <strong>Hospital:</strong> {quote.hospital_cover}
+        </p>
+
+        <p>
+          <strong>Extras:</strong> {quote.extras_cover}
+        </p>
+
+        <p>
+          <strong>Payment:</strong> {quote.payment_frequency}
+        </p>
+      </div>
+    ))}
+  </div>
+)}
     </div>
   );
 }

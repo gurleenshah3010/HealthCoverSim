@@ -84,3 +84,28 @@ button:hover {
     padding: 22px;
   }
 }
+hr {
+  margin: 35px 0;
+  border: 0;
+  border-top: 1px solid #ddd;
+}
+
+.quote-list {
+  display: grid;
+  gap: 15px;
+}
+
+.quote-card {
+  border: 1px solid #ddd;
+  padding: 18px;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.quote-card h3 {
+  margin-top: 0;
+}
+
+.quote-card p {
+  margin: 7px 0;
+}
