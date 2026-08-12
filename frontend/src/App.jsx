@@ -46,7 +46,14 @@ function Home() {
   }
 }
 useEffect(() => {
-  loadQuotes();
+  fetch("http://localhost:5000/api/quotes")
+    .then((response) => response.json())
+    .then((data) => {
+      setQuotes(data);
+    })
+    .catch((error) => {
+      console.error("Could not load quotes:", error);
+    });
 }, []);
 
   async function handleSubmit(event) {
